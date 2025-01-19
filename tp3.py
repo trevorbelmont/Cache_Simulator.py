@@ -16,10 +16,26 @@ def hexaDoeu(hex : str, nDigits : int):
         hex = "0x"+hex.upper()
     return hex
 
-def main():
+def testConversion():
     print(f"cs = {cs}\nls = {ls}\nss = {ss}\nnLines = {nLines}\nnSets = {nSets}\ninFile = {inFile}")
     
     print(f"0xDEADBEEF ({int("0xDEADBEEF",16)}) -> {hexaDoeu(hex(indexDecimal("0xDEADBEEF",10)),8)} ({indexDecimal("0xDEADBEEF",10)})")
+
+def printCacheState(nEntries, validList, addressList):
+    ''' Este método imprime o estado da cache em um dado momento.'''
+    print("================")
+    print("IDX V ** ADDR **")
+    for i in range(nEntries):
+        address = hexaDoeu(addressList[i],8) if (validList[i]== True) else "" # condiciona a impressão da tag se o dado é válido na cache
+        print (f"{str(i).zfill(3)} {int(validList[i])} {address}")
+    
+
+def main():
+    vList = [False] * nLines
+    vList[2] = vList[0] = 1
+    addressList = ["0x456ef"] * nLines
+    printCacheState(nLines,vList,addressList)
+    
 
 if __name__ == "__main__":
     if len(sys.argv) != 5:
