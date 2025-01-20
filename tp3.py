@@ -108,7 +108,8 @@ def main():
 
 if __name__ == "__main__":
     if (len(sys.argv) < 5 or len(sys.argv) > 7) :
-        print("Uso do script: python3 simulador.py <Cache_byte_size> <Entry_byte_size> <Cache_set_size> <Input_reading_file.txt>")
+        print("Uso do script: python3 simulador.py <Cache_byte_size> <Entry_byte_size> <Cache_set_size> <Input_file.txt>")
+        print("Adicionalmente pode-se usar os argumentos <debug> <Output_file.txt> para rodar no modo debuggin e especificar arquivo de saída")
     else:
         cs = int (sys.argv[1]) # cs (cache size, em bytes)
         ls = int (sys.argv[2]) # ls (line size, em bytes)
