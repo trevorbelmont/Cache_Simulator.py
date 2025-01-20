@@ -35,12 +35,17 @@ def cacheAllocate(index, addressList, vList,FIFO):
     wSet = index%nSets # wSet (which Set) indica em qual set/conjunto da cache o bloco será inserido/buscado
     wLine = wSet * ss # wLine (which Line) aponta para a primeira linha do set
     
+    if index in addressList[wLine: wLine + ss]: #checa se o bloco de memória já está carregado na cache
+        if DBG: print("+1 um HIT, Muleque!!!")
+        return False # Retorna False. Nenhum bloco de memória precisou ser carregado da cache (ou seja: deu HIT).
+    
     if(DBG): print(f"index = {index} ({hex(index)}) nSets={nSets} lines = {nLines} wSet = {wSet} wLine = {wLine} wLine+FIFO = {wLine+FIFO[wSet]}")
     
     wLine += FIFO[wSet] # wLine agora aponta para a entrada mais antiga no set (FIFO)
     addressList[wLine] = index
     vList[wLine] = True
     FIFO[wSet] = (FIFO[wSet] + 1) % ss #atualiza o FIFO do set correspondente
+    return True # Retorna True. Ou seja: um novo bloco de memória foi carregado da memória RAM pra cache (MISS).
 
     
     
@@ -50,10 +55,10 @@ def printCacheState(nEntries, validList, addressList, FIFO, dbg):
     cache = "================\n"
     cache += "IDX V ** ADDR **\n"
     for i in range(nEntries):
-        address = hexaDoeu(hex(addressList[i]),8) if (validList[i]== True) else "" # condiciona a impressão da tag/index se o dado é válido na cache
-        cache += f"{str(i).zfill(3)} {int(validList[i])} {address}" # adiciona cada linha da cache à string cache
+        address = " "+hexaDoeu(hex(addressList[i]),8) if (validList[i]== True) else "" # condiciona a impressão da tag/index se o dado é válido na cache
+        cache += f"{str(i).zfill(3)} {int(validList[i])}{address}" # adiciona cada linha da cache à string cache
         wSet = i//nSets if nSets > 1 else 0
-        fifoMark = " !\n" if (dbg and FIFO[wSet] == i%nSets) else "\n"
+        fifoMark =  "\n"#" !\n" if (dbg and FIFO[wSet] == i%nSets) else "\n"
         cache += fifoMark
     if dbg:
         print(cache)
@@ -67,7 +72,9 @@ def memoryLoading(InputFile : str, OutputFile : str):
     addressList = [""] * nLines # array de tags de indereços
     fifo = [0] * nSets
     
-    printCacheState(nLines,vList,addressList,fifo,True)
+    hits = miss = 0
+    
+    printCacheState(nLines,vList,addressList,fifo,DBG)
     
     #try : similar ao excepetion handler (try-throw-catch) do C++.
     try: 
@@ -78,8 +85,14 @@ def memoryLoading(InputFile : str, OutputFile : str):
                     memBlock = linha.strip() # memBlock (str) recebe o conteúdo da linha com os espaços em branco removidos
                     if isHexadecimal(memBlock):
                         index = indexDecimal(memBlock,offset)
-                        cacheAllocate(index,addressList, vList, fifo)
-                        outFile.write(printCacheState(nLines,vList,addressList,fifo,True))
+                        newAlloc = cacheAllocate(index,addressList, vList, fifo)
+                        if newAlloc :
+                            miss += 1
+                        else: 
+                            hits += 1
+                        outFile.write(printCacheState(nLines,vList,addressList,fifo,DBG))
+            
+            outFile.write(f"\n#hits: {hits}\n#miss: {miss}")
                         
     # Lança as exceções do bloco try (relativas à leitura de arquivos)
     except FileNotFoundError:
@@ -90,11 +103,11 @@ def memoryLoading(InputFile : str, OutputFile : str):
 
 def main():
     ''' Uma função main de lei porque tô acostumado é com c++ e c# ;-p '''
-    memoryLoading(InFile, "out.txt")
+    memoryLoading(InFile, OutFile)
        
 
 if __name__ == "__main__":
-    if (len(sys.argv) < 5 or len(sys.argv) > 6) :
+    if (len(sys.argv) < 5 or len(sys.argv) > 7) :
         print("Uso do script: python3 simulador.py <Cache_byte_size> <Entry_byte_size> <Cache_set_size> <Input_reading_file.txt>")
     else:
         cs = int (sys.argv[1]) # cs (cache size, em bytes)
@@ -104,7 +117,8 @@ if __name__ == "__main__":
         ss = int (sys.argv[3]) # ss (set size (tamanho do conjunto), em linhas)
         nSets = int(nLines/ss)      # número de sets = nLinhas / tamanho do conjunto (linhas)
         InFile = sys.argv[4]   # Arquivo de entrada com os endereços dos blocos (de memória) a serem carregados
-        DBG = True if len(sys.argv) == 6 and sys.argv[5] == "debug" else False
+        DBG = True if len(sys.argv) >= 6 and sys.argv[5] == "debug" else False
+        OutFile = "out.txt" if len(sys.argv) != 7 else sys.argv[6]
         #print(f"{isHexadecimal("0x00023FD")}")
         #print(offset)
         #hexa = "0x0CB886CA"
