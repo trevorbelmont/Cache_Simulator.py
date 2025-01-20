@@ -1,0 +1,16 @@
+
+Aluno: Marcos Antônio Dias Júnior
+TP3 OC1 Professor Omar Paranaíba
+
+Obs1: O código deste simulador foi implementado utlizando python3 versão 3.12.3.
+
+Obs2: A especificação do TP3 está um pouco imprecisa quanto aos exemplos de casos teste - e, pelo menos até 19/jan, nenhuma das perguntas realtivas as duvidas levantadas pelas inconsistências foi respondida.
+Inconsistências econtradas: 
+    - Exemplo 2: Este exemplo tem 7 linhas de entrada. Porém só imprime 6 estados da cache. 
+        O meu programa segue a especificação e imprime as 7 linhas.
+
+    - Exemplo 5 e 6: Estes exemplos são de cache associativa por conjunto. Segundo a especificação, os bits do endereçamento que indexam o mapeamento de conjunto na cache TAMBÉM DEVERIAM SER IGNORADOS. Porém nestes exemplos os bits de mapeamento de conjunto não são ignorados no índice.
+        Solução: Mesmo notando essa incongruência, afim de manter a similaridade com os exmplos dados, o meu programa NÃO IGNORA os bits de mapeamento de conjunto no index.
+    
+    - Exemplo 5: Este exemplo me foi o mais confuso. Pela especificação deveriam ser ignorados 10 bits de offset (log2(1024), pelo tamanho do bloco de memória) + 1 bit que indicaria para qual dos dois conjuntos o bloco de memória foi mapeado na cache. A ocupação dos blocos de memória nos conjuntos da cache neste exemplo até condiz com este offset de 11 dígitos, porém os índices dos blocos na cache não condizem. Inclusive isso fica gritante quando percebemos que temos index ímpares mapeados para conjuntos pares. Dá a entender que, durante o cálculo da linha os 11 dígitos foram de fato ignorados, porém na hora de escrever os índices o cálculo do índice foi refeiro para ignorar apenas 10 dígitos.
+        Solução: Como não há uma diretriz clara do que se deve fazer nestes casos contraditórios, optei por manter o código o mais  próximo do INDEX mostrados no exemplo possível. Portanto, ignorei apenas 10 dígitos e mapeei os blocos aos conjuntos de acordo com o módulo deste índice. Assim os valores no campo ADDR condizem com os exibidos no exemplo, porém as linhas ocupadas foram modificadas de acordo.
