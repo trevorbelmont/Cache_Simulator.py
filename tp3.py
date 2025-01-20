@@ -1,4 +1,11 @@
 import sys
+import math
+
+def isHexadecimal(line : str):
+    """ Retorna true se a string for um número hexadecimal"""
+    hexDigits = "0123456789ABCDEF" #Todos os possíveis dígitos de um número hexadecimal no padrão adotado (letras maiúsculas).
+    return (all(c in hexDigits for c in line[2:]) and  line.startswith("0x") )
+    # retorna true se todos dígitos válidos, c, na string line está presente (previsto) na string hexDigits e line começa com o prefixo "0x".
 
 def indexDecimal(hex :str, nIgnore : int):
     """ Converte um índce de memória, hex, de hex2Binário e ignora os nIgnore bits menos significativos. Depois converte o resultado pra decimal"""
@@ -17,34 +24,89 @@ def hexaDoeu(hex : str, nDigits : int):
     return hex
 
 def testConversion():
-    print(f"cs = {cs}\nls = {ls}\nss = {ss}\nnLines = {nLines}\nnSets = {nSets}\ninFile = {inFile}")
-    
+    print(f"cs = {cs}\nls = {ls}\nss = {ss}\nnLines = {nLines}\nnSets = {nSets}\ninFile = {InFile}")
     print(f"0xDEADBEEF ({int("0xDEADBEEF",16)}) -> {hexaDoeu(hex(indexDecimal("0xDEADBEEF",10)),8)} ({indexDecimal("0xDEADBEEF",10)})")
 
-def printCacheState(nEntries, validList, addressList):
-    ''' Este método imprime o estado da cache em um dado momento.'''
-    print("================")
-    print("IDX V ** ADDR **")
-    for i in range(nEntries):
-        address = hexaDoeu(addressList[i],8) if (validList[i]== True) else "" # condiciona a impressão da tag se o dado é válido na cache
-        print (f"{str(i).zfill(3)} {int(validList[i])} {address}")
+def cacheAllocate(index, addressList, vList,FIFO):
+    """"Essa função aloca um bloco de memória na cache. 
+    Ela retorna True, se um novo bloco foi carregado pra cache (MISS), ou False, caso o bloco buscado já estiver na cache (HIT).
+    Em outras palavras: a função retorna False se não houve necessidade de uma busca da memória (HIT)
+    e True quando uma nova busca da memória teve que ser executada para acessar o dado (MISS)."""
+    wSet = index%nSets # wSet (which Set) indica em qual set/conjunto da cache o bloco será inserido/buscado
+    wLine = wSet * ss # wLine (which Line) aponta para a primeira linha do set
     
+    if(DBG): print(f"index = {index} ({hex(index)}) nSets={nSets} lines = {nLines} wSet = {wSet} wLine = {wLine} wLine+FIFO = {wLine+FIFO[wSet]}")
+    
+    wLine += FIFO[wSet] # wLine agora aponta para a entrada mais antiga no set (FIFO)
+    addressList[wLine] = index
+    vList[wLine] = True
+    FIFO[wSet] = (FIFO[wSet] + 1) % ss #atualiza o FIFO do set correspondente
+
+    
+    
+
+def printCacheState(nEntries, validList, addressList, FIFO, dbg):
+    ''' Este método retorna uma string formatada com o estado atual da cache.'''
+    cache = "================\n"
+    cache += "IDX V ** ADDR **\n"
+    for i in range(nEntries):
+        address = hexaDoeu(hex(addressList[i]),8) if (validList[i]== True) else "" # condiciona a impressão da tag/index se o dado é válido na cache
+        cache += f"{str(i).zfill(3)} {int(validList[i])} {address}" # adiciona cada linha da cache à string cache
+        wSet = i//nSets if nSets > 1 else 0
+        fifoMark = " !\n" if (dbg and FIFO[wSet] == i%nSets) else "\n"
+        cache += fifoMark
+    if dbg:
+        print(cache)
+    return cache
+ 
+def memoryLoading(InputFile : str, OutputFile : str):
+    """ Essa função lê os endereços de memória buscados do arquivo "InputFile" e carrega-os na cache.\n 
+        Cada estado da cache após cada load(leitura de cada linha) é impresso no arquivo "OutputFile". """
+    
+    vList = [False] * nLines # array de dígitos de validade
+    addressList = [""] * nLines # array de tags de indereços
+    fifo = [0] * nSets
+    
+    printCacheState(nLines,vList,addressList,fifo,True)
+    
+    #try : similar ao excepetion handler (try-throw-catch) do C++.
+    try: 
+        #with <expression> as <variable> : gerenciador automático de recursos. Neste caso ele fecha o arquivo automaticamente.
+        with open(InputFile, 'r') as inFile, open(OutputFile, 'w') as outFile:
+            for linha in inFile: #loop que lê todas as linhas no arquivo
+                if linha: # linha = true -> linha não é uma string vazia
+                    memBlock = linha.strip() # memBlock (str) recebe o conteúdo da linha com os espaços em branco removidos
+                    if isHexadecimal(memBlock):
+                        index = indexDecimal(memBlock,offset)
+                        cacheAllocate(index,addressList, vList, fifo)
+                        outFile.write(printCacheState(nLines,vList,addressList,fifo,True))
+                        
+    # Lança as exceções do bloco try (relativas à leitura de arquivos)
+    except FileNotFoundError:
+        print(f"Erro: O arquivo '{InputFile}' não foi encontrado.")
+    except ValueError as e:
+        print(f"Erro ao processar o arquivo: {e}")
+
 
 def main():
-    vList = [False] * nLines
-    vList[2] = vList[0] = 1
-    addressList = ["0x456ef"] * nLines
-    printCacheState(nLines,vList,addressList)
-    
+    ''' Uma função main de lei porque tô acostumado é com c++ e c# ;-p '''
+    memoryLoading(InFile, "out.txt")
+       
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
+    if (len(sys.argv) < 5 or len(sys.argv) > 6) :
         print("Uso do script: python3 simulador.py <Cache_byte_size> <Entry_byte_size> <Cache_set_size> <Input_reading_file.txt>")
     else:
         cs = int (sys.argv[1]) # cs (cache size, em bytes)
         ls = int (sys.argv[2]) # ls (line size, em bytes)
+        offset = int(math.log2(ls))
         nLines = int(cs / ls)
         ss = int (sys.argv[3]) # ss (set size (tamanho do conjunto), em linhas)
         nSets = int(nLines/ss)      # número de sets = nLinhas / tamanho do conjunto (linhas)
-        inFile = sys.argv[4]   # Arquivo de entrada com os endereços dos blocos (de memória) a serem carregados
+        InFile = sys.argv[4]   # Arquivo de entrada com os endereços dos blocos (de memória) a serem carregados
+        DBG = True if len(sys.argv) == 6 and sys.argv[5] == "debug" else False
+        #print(f"{isHexadecimal("0x00023FD")}")
+        #print(offset)
+        #hexa = "0x0CB886CA"
+        #print(f"{hexa} -> {hexaDoeu(hex(indexDecimal(hexa,offset)),8)} :: {int(hexaDoeu(hex(indexDecimal(hexa,offset)),8),16)} % {nSets} = ({int(hexaDoeu(hex(indexDecimal(hexa,offset)),8),16)%nSets})")
         main()
