@@ -25,7 +25,7 @@ def hexaDoeu(hex : str, nDigits : int):
 
 def testConversion():
     print(f"cs = {cs}\nls = {ls}\nss = {ss}\nnLines = {nLines}\nnSets = {nSets}\ninFile = {InFile}")
-    print(f"0xDEADBEEF ({int('0xDEADBEEF',16)}) -> {hexaDoeu(hex(indexDecimal('0xDEADBEEF',10)),8)} ({indexDecimal('0xDEADBEEF',10)})")
+    print(f"0xDEADBEEF ({int("0xDEADBEEF",16)}) -> {hexaDoeu(hex(indexDecimal("0xDEADBEEF",10)),8)} ({indexDecimal("0xDEADBEEF",10)})")
 
 def cacheAllocate(index, addressList, vList,FIFO):
     """"Essa função aloca um bloco de memória na cache. 
@@ -55,12 +55,6 @@ def printCacheState(nEntries, validList, addressList, FIFO, dbg):
     cache = "================\n"
     cache += "IDX V ** ADDR **\n"
     for i in range(nEntries):
-        hexfied = "-------"
-        if addressList[i] != "":
-            hexfied = hex(indexDecimal(addressList[i],math.log2(nSets)))
-        print(f"{hexfied}")
-        
-        #id = indexDecimal(hexfied,math.log2(nSets))
         address = " "+hexaDoeu(hex(addressList[i]),8) if (validList[i]== True) else "" # condiciona a impressão da tag/index se o dado é válido na cache
         cache += f"{str(i).zfill(3)} {int(validList[i])}{address}" # adiciona cada linha da cache à string cache
         wSet = i//nSets if nSets > 1 else 0
